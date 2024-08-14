@@ -375,6 +375,8 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         if (!empty($submissionSubjectsDAO->getSubjects($article->getCurrentPublication()->getId())))
             $codesNode->append($doc->createElement('udk', htmlentities(array_shift(array_shift($submissionSubjectsDAO->getSubjects($article->getCurrentPublication()->getId()))), ENT_XML1)));
         $codesNode->append($doc->createElement('doi', htmlentities($article->getStoredPubId('doi'), ENT_XML1)));
+        $codesNode->append($doc->createElement('udk', $article->getStoredPubId('udc')));
+        $codesNode->append($doc->createElement('edn', $article->getStoredPubId('edn')));
         return $codesNode;
     }
 
@@ -411,7 +413,9 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
      * @param $langs string[]
      * @return DOMElement|false
      */
-    protected function _createFundingsNode($doc, $article, $langs)
+
+    // ! Default funding 
+    protected function _createFundingsNodeDefault($doc, $article, $langs)
     {
         $fundingsNode = $doc->createElement('fundings');
         $submissionAgencyDAO = DAORegistry::getDAO('SubmissionAgencyDAO');
@@ -430,6 +434,26 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         }
         return $fundingsNode;
     }
+    // !default funding//
+
+    // ? custon funding
+    protected function _createFundingsNode($doc, $article, $langs)
+    {
+        $fundingsNode = $doc->createElement('fundings');
+
+        foreach($langs as $lang)
+        {
+            $locale = $this->_convertISO639ToLocale($lang);
+            $funding = $article->getCurrentPublication()->getData('funding', $locale);
+
+            $fundingNode = $doc->createElement('funding', htmlentities(strip_tags($funding), ENT_XML1));
+            $fundingNode->setAttribute('lang', $lang);
+            $fundingsNode->append($fundingNode);
+        }
+
+        return $fundingsNode;
+    }
+    // ? custom funding//
 
     /**
      * @param $doc DOMDocument
@@ -551,7 +575,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
      */
     protected function _parseAffiliation($affiliationStr)
     {
-        $affiliationsStr = explode(';', $affiliationStr);
+        $affiliationsStr = explode(' / ', $affiliationStr);
 
         $organizations = array();
         $addresses = array();
