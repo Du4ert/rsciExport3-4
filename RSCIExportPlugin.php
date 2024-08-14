@@ -20,7 +20,8 @@ use PKP\file\FileManager;
 use APP\plugins\importexport\rsciexport\classes\form\RSCIExportSettingsForm;
 use PKP\submission\PKPSubmission;
 use PKP\config\Config;
-
+use PKP\plugins\Hook;
+use ZipArchive;
 
 class RSCIExportPlugin extends ImportExportPlugin
 {
@@ -185,9 +186,9 @@ class RSCIExportPlugin extends ImportExportPlugin
 
         // ZIP:
         
-        $zip = new \ZipArchive();
+        $zip = new ZipArchive();
         $zipPath = $this->getExportPath().'issue-'.$issue->getNumber().'-'.$issue->getYear() . '.zip';
-        if ($zip->open($zipPath, \ZipArchive::CREATE)!==TRUE) {
+        if ($zip->open($zipPath, ZipArchive::CREATE)!==TRUE) {
             exit('Невозможно создать архив ZIP (' . $zipPath . '\n');
         }
         $filesToArchive = scandir($this->getExportPath());
@@ -200,7 +201,9 @@ class RSCIExportPlugin extends ImportExportPlugin
         $zip->close();
 
         // UPLOAD:
-        $fileManager->downloadByPath($zipPath);
+        // readfile($zipPath);
+        $this->downloadByPath($zipPath, '.zip');
+        // $fileManager->deleteByPath($zipPath);
         $fileManager->rmtree($this->getExportPath());
     }
 
@@ -208,6 +211,72 @@ class RSCIExportPlugin extends ImportExportPlugin
      * @var string
      */
     protected $_generatedTempPath = '';
+
+
+    //! Function copied from FileManager class
+
+    public function downloadByPath($filePath, $mediaType = null, $inline = false, $fileName = null)
+    {
+        $result = null;
+        if (Hook::call('FileManager::downloadFile', [&$filePath, &$mediaType, &$inline, &$result, &$fileName])) {
+            return $result;
+        }
+        if (is_readable($filePath)) {
+            if ($mediaType === null) {
+                // If the media type wasn't specified, try to detect.
+                $mediaType = PKPString::mime_content_type($filePath);
+                if (empty($mediaType)) {
+                    $mediaType = 'application/octet-stream';
+                }
+            }
+            if ($fileName === null) {
+                // If the filename wasn't specified, use the server-side.
+                $fileName = basename($filePath);
+            }
+
+            // Clear output buffer
+            ob_clean();
+            // Stream the file to the end user.
+            header("Content-Type: {$mediaType}");
+            header('Content-Length: ' . filesize($filePath));
+            header('Accept-Ranges: none');
+            header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . "; filename=\"{$fileName}\"");
+            header('Cache-Control: private'); // Workarounds for IE weirdness
+            header('Pragma: public');
+            $this->readFileFromPath($filePath, true);
+            $returner = true;
+        } else {
+            $returner = false;
+        }
+        Hook::call('FileManager::downloadFileFinished', [&$returner]);
+        return $returner;
+    }
+
+    public function readFileFromPath($filePath, $output = false)
+    {
+        if (is_readable($filePath)) {
+            $f = fopen($filePath, 'rb');
+            if (!$f) {
+                return false;
+            }
+            $data = '';
+            while (!feof($f)) {
+                $data .= fread($f, 4096);
+                if ($output) {
+                    echo $data;
+                    $data = '';
+                }
+            }
+            fclose($f);
+
+            if ($output) {
+                return true;
+            }
+            return $data;
+        }
+        return false;
+    }
+    //! Function copied from FileManager class //
 
     /**
      * @copydoc ImportExportPlugin::getExportPath()
