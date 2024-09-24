@@ -21,6 +21,8 @@ use APP\plugins\importexport\rsciexport\classes\form\RSCIExportSettingsForm;
 use PKP\submission\PKPSubmission;
 use PKP\config\Config;
 use PKP\plugins\Hook;
+use PKP\notification\PKPNotification;
+use PKP\core\PKPString;
 use ZipArchive;
 
 class RSCIExportPlugin extends ImportExportPlugin
@@ -44,7 +46,7 @@ class RSCIExportPlugin extends ImportExportPlugin
     {
         parent::display($args, $request);
         $templateMgr = TemplateManager::getManager($request);
-        $journal = $request->getJournal();
+        // $journal = $request->getJournal();
 
         switch (array_shift($args)) {
             case 'index':
@@ -57,7 +59,7 @@ class RSCIExportPlugin extends ImportExportPlugin
                 {
                     $user = $request->getUser();
                     $notificationManager = new NotificationManager();
-                    $notificationManager->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_ERROR, array('pluginName' => $this->getDisplayName(), 'contents' => "Choose one issue."));
+                    $notificationManager->createTrivialNotification($user->getId(), PKPNotification::NOTIFICATION_TYPE_ERROR, array('pluginName' => $this->getDisplayName(), 'contents' => "Choose one issue."));
                     $request->redirectUrl(str_replace("exportIssue", "", $request->getRequestPath()));
                     break;
                 }
@@ -72,7 +74,7 @@ class RSCIExportPlugin extends ImportExportPlugin
                         $notificationManager = new NotificationManager();
                         $notificationManager->createTrivialNotification(
                             $user->getId(),
-                            NOTIFICATION_TYPE_ERROR,
+                            PKPNotification::NOTIFICATION_TYPE_ERROR,
                             array('pluginName' => $this->getDisplayName(),
                             'contents' => "Choose issue with articles"));
                         $request->redirectUrl(str_replace("exportIssue", "", $request->getRequestPath()));
@@ -101,7 +103,7 @@ class RSCIExportPlugin extends ImportExportPlugin
                 $settingsForm->readInputData();
                 if ($settingsForm->validate()) {
                     $settingsForm->execute([]);
-                    $notificationManager->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_SUCCESS);
+                    $notificationManager->createTrivialNotification($user->getId(), PKPNotification::NOTIFICATION_TYPE_SUCCESS);
                     return new JSONMessage();
                 } else {
                     return new JSONMessage(true, $settingsForm->fetch($request));
