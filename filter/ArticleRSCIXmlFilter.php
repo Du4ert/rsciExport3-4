@@ -511,15 +511,16 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $file = null;
         foreach ($galleys as $galley)
         {
-            if (strcmp($galley->getGalleyLabel(), "PDF") === 0 || strcmp($galley->getGalleyLabel(), "pdf") === 0){
+            if (strcmp($galley->getGalleyLabel(), "PDF") === 0 || strcmp($galley->getGalleyLabel(), "pdf") === 0 || strcmp($galley->getGalleyLabel(), "fulltext") === 0){
                 $file = $galley->getFile();
                 $pdfgalley = $galley;
                 break;
             }
         }
 
-        if (empty($pdfgalley))
+        if (empty($pdfgalley)) {
             return "";
+        }
 
         $request = Application::get()->getRequest();
         $context = $request->getContext();
