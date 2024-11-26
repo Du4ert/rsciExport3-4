@@ -474,7 +474,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
             $referenceNode = $doc->createElement('reference');
             $refInfoNode = $doc->createElement('refInfo');
             $refInfoNode->setAttribute('lang', $lang);
-            $textNode = $doc->createElement('text', htmlentities($citation->getRawCitation(), ENT_XML1));
+            $textNode = $doc->createElement('text', strip_tags($citation->getRawCitation()));
             $refInfoNode->append($textNode);
             $referenceNode->append($refInfoNode);
             $referencesNode->append($referenceNode);
