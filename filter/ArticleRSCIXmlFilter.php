@@ -242,6 +242,19 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
     protected $_artTypes = array ('ABS', 'BRV', 'CNF', 'COR', 'EDI', 'MIS', 'PER', 'RAR', 'REP', 'REV', 'SCO', 'UNK');
 
 
+    function cleanString($input) {
+        // Удаляем HTML-теги
+        $cleaned = strip_tags($input);
+        
+        // Преобразуем специальные символы в HTML-сущности
+        $cleaned = htmlspecialchars($cleaned, ENT_QUOTES, 'UTF-8');
+
+        // Удаляем лишние пробелы
+        $cleaned = preg_replace('/\s+/', ' ', $cleaned);
+        
+        return trim($cleaned);
+    }
+
     /**
      * @param $doc DOMDocument
      * @param $article Submission published
@@ -261,6 +274,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $articleFilePath = $galley->getFile()->getData('path');
 
         $text = $parser->parseFile(Config::getVar('files', 'files_dir') . '/' . $articleFilePath)->getText();
+        $text = $this->cleanString($text);
         $start = $this->_exportSettings['docStartKey'];
         $end = $this->_exportSettings['docEndKey'];
         $startPos = strpos($text, $start);
@@ -497,6 +511,30 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         return $datesNode;
     }
 
+    public function formatPageRange($pageRange) {
+        // Разделяем строку по символу '-'
+        list($start, $end) = explode('-', $pageRange);
+        
+        // Определяем количество разрядов для форматирования
+        $length = max(strlen($start), strlen($end));
+        
+        // Форматируем страницы в соответствии с количеством разрядов
+        if ($length == 1) {
+            $startFormatted = str_pad($start, 3, '0', STR_PAD_LEFT);
+            $endFormatted = str_pad($end, 3, '0', STR_PAD_LEFT);
+        } elseif ($length == 2) {
+            $startFormatted = str_pad($start, 3, '0', STR_PAD_LEFT);
+            $endFormatted = str_pad($end, 3, '0', STR_PAD_LEFT);
+        } elseif ($length == 3) {
+            $startFormatted = str_pad($start, 3, '0', STR_PAD_LEFT);
+            $endFormatted = str_pad($end, 3, '0', STR_PAD_LEFT);
+        } else {
+            // Если количество разрядов больше трех, просто возвращаем оригинальные значения
+            return "$start-$end";
+        }
+    
+        return "$startFormatted-$endFormatted";
+    }
     /**
      * @param $doc DOMDocument
      * @param $article Submission published
@@ -531,42 +569,39 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $filesNode->append($furlNode);
         if (!empty($file))
         {
+
+            //?CUSTOM
             foreach ($file->getData('name') as $filename)
             {
                 if ($filename !== "")
                 {
+                    $fileParts = explode('.', $filename);
+                    $fileExtension = end($fileParts);
+                    $pages = $this->formatPageRange($article->getPages());
+                    $filename = $pages . '.' . $fileExtension;
                     $fileNode = $doc->createElement('file', $filename);
                     $fileNode->setAttribute('desc', 'fullText');
                     $filesNode->append($fileNode);
                     break;
                 }
             }
+            //?CUSTOM-END
+
+            //!DELETE ORIGIN
+            // foreach ($file->getData('name') as $filename)
+            // {
+            //     if ($filename !== "")
+            //     {
+            //         $fileNode = $doc->createElement('file', $filename);
+            //         $fileNode->setAttribute('desc', 'fullText');
+            //         $filesNode->append($fileNode);
+            //         break;
+            //     }
+            // }
+            //!DELETE ORIGIN-END
         }
 
         return $filesNode;
-    }
-
-    /**
-     * Converts galley filename to RSCI name format for archiving (example: "13-16.pdf").
-     * @param $article Submission published
-     * @return string
-     * @deprecated in 0.1.0.2
-     */
-    static public function getArticleFileNameToRSCI($article,  $issue)
-    {
-        $galleys = Repo::galley()->dao->getByPublicationId($article->getCurrentPublication()->getId());
-        $file = null;
-        foreach ($galleys as $galley)
-        {
-            if (strcmp($galley->getGalleyLabel(), "PDF") === 0)
-                $file = $galley->getFile();
-        }
-        if (empty($file))
-            return "";
-
-        $filename = $file->getData('name');
-
-        return $filename;
     }
 
     /**

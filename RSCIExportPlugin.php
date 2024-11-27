@@ -178,10 +178,21 @@ class RSCIExportPlugin extends ImportExportPlugin
                 continue;
             $fileName = "";
             $articleFilePath = $galley->getFile()->getData('path');
+            $pages = $this->formatPageRange($article->getPages());
+            
             foreach ($galley->getFile()->getData('name') as $filename)
             {
-                if ($filename !== "")
-                    $fileName = $filename;
+
+                if ($filename !== "") {
+
+                    if ($pages) {
+                        $fileParts = explode('.', $filename);
+                        $fileExtension = end($fileParts);
+                        $fileName = $pages . '.' . $fileExtension;
+                    } else {
+                        $fileName = $filename;
+                    }
+                }
             }
             $fileManager->copyFile(Config::getVar('files', 'files_dir') . '/' . $articleFilePath, $this->getExportPath() . $fileName);
         }
@@ -350,5 +361,30 @@ class RSCIExportPlugin extends ImportExportPlugin
     function getDescription(): string
     {
         return __('plugins.importexport.rsciexport.description');
+    }
+
+    public function formatPageRange($pageRange) {
+        // Разделяем строку по символу '-'
+        list($start, $end) = explode('-', $pageRange);
+        
+        // Определяем количество разрядов для форматирования
+        $length = max(strlen($start), strlen($end));
+        
+        // Форматируем страницы в соответствии с количеством разрядов
+        if ($length == 1) {
+            $startFormatted = str_pad($start, 3, '0', STR_PAD_LEFT);
+            $endFormatted = str_pad($end, 3, '0', STR_PAD_LEFT);
+        } elseif ($length == 2) {
+            $startFormatted = str_pad($start, 3, '0', STR_PAD_LEFT);
+            $endFormatted = str_pad($end, 3, '0', STR_PAD_LEFT);
+        } elseif ($length == 3) {
+            $startFormatted = str_pad($start, 3, '0', STR_PAD_LEFT);
+            $endFormatted = str_pad($end, 3, '0', STR_PAD_LEFT);
+        } else {
+            // Если количество разрядов больше трех, просто возвращаем оригинальные значения
+            return "$start-$end";
+        }
+    
+        return "$startFormatted-$endFormatted";
     }
 }
