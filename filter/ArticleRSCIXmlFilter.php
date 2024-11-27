@@ -22,6 +22,7 @@ use APP\notification\NotificationManager;
 use PKP\db\DAORegistry;
 use APP\facades\Repo;
 use PKP\submission\PKPSubmission;
+use APP\plugins\importexport\rsciexport\RSCIExportPlugin;
 
 use PKP\config\Config;
 
@@ -511,30 +512,6 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         return $datesNode;
     }
 
-    public function formatPageRange($pageRange) {
-        // Разделяем строку по символу '-'
-        list($start, $end) = explode('-', $pageRange);
-        
-        // Определяем количество разрядов для форматирования
-        $length = max(strlen($start), strlen($end));
-        
-        // Форматируем страницы в соответствии с количеством разрядов
-        if ($length == 1) {
-            $startFormatted = str_pad($start, 3, '0', STR_PAD_LEFT);
-            $endFormatted = str_pad($end, 3, '0', STR_PAD_LEFT);
-        } elseif ($length == 2) {
-            $startFormatted = str_pad($start, 3, '0', STR_PAD_LEFT);
-            $endFormatted = str_pad($end, 3, '0', STR_PAD_LEFT);
-        } elseif ($length == 3) {
-            $startFormatted = str_pad($start, 3, '0', STR_PAD_LEFT);
-            $endFormatted = str_pad($end, 3, '0', STR_PAD_LEFT);
-        } else {
-            // Если количество разрядов больше трех, просто возвращаем оригинальные значения
-            return "$start-$end";
-        }
-    
-        return "$startFormatted-$endFormatted";
-    }
     /**
      * @param $doc DOMDocument
      * @param $article Submission published
@@ -577,7 +554,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
                 {
                     $fileParts = explode('.', $filename);
                     $fileExtension = end($fileParts);
-                    $pages = $this->formatPageRange($article->getPages());
+                    $pages = RSCIExportPlugin::formatPageRange($article->getPages());
                     $filename = $pages . '.' . $fileExtension;
                     $fileNode = $doc->createElement('file', $filename);
                     $fileNode->setAttribute('desc', 'fullText');

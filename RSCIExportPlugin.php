@@ -178,7 +178,7 @@ class RSCIExportPlugin extends ImportExportPlugin
                 continue;
             $fileName = "";
             $articleFilePath = $galley->getFile()->getData('path');
-            $pages = $this->formatPageRange($article->getPages());
+            $pages = self::formatPageRange($article->getPages());
             
             foreach ($galley->getFile()->getData('name') as $filename)
             {
@@ -363,7 +363,7 @@ class RSCIExportPlugin extends ImportExportPlugin
         return __('plugins.importexport.rsciexport.description');
     }
 
-    public function formatPageRange($pageRange) {
+    public static function formatPageRange($pageRange) {
         // Разделяем строку по символу '-'
         list($start, $end) = explode('-', $pageRange);
         
