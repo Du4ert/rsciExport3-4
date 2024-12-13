@@ -233,7 +233,7 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $articleNode->append($this->_createKeywordsNode($doc, $article, $langs));
         
         $articleNode->append($this->_createReferencesNode($doc, $article));
-        $articleNode->append($this->_createDateNode($doc, $article));
+        // $articleNode->append($this->_createDateNode($doc, $article));
         $articleNode->append($this->_createFundingsNode($doc, $article, $langs));
         $articleNode->append($this->_createFilesNode($doc, $article));
 
@@ -508,6 +508,8 @@ class ArticleRSCIXmlFilter extends PersistableFilter {
         $datesNode = $doc->createElement('dates');
         $dateReceivedNode = $doc->createElement('dateReceived', array_shift(explode(" ", $article->getDateSubmitted())));
         $datesNode->append($dateReceivedNode);
+        // $datePublishedNode = $doc->createElement('datePublished', array_shift(explode(" ", $article->getDatePublished())));
+        // $datesNode->append($datePublishedNode);
 
         return $datesNode;
     }
